@@ -47,6 +47,10 @@ class RequestHandler(private val socket: Socket) : Runnable {
                 } else {
                     Socket(host, port.toInt())
                 }
+
+                forwardSocket.soTimeout = 5000 // 타임아웃
+                socket.soTimeout = 5000
+
             } catch (e: Exception) {
                 Log.w(TAG, e)
                 writer.write("HTTP/$version 502 Bad Gateway\r\n")
