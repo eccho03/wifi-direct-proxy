@@ -3,7 +3,6 @@ package com.example.wifi_direct_proxy
 import android.Manifest
 import android.content.*
 import android.net.wifi.WifiManager
-import android.net.wifi.p2p.WifiP2pConfig
 import android.net.wifi.p2p.WifiP2pGroup
 import android.net.wifi.p2p.WifiP2pManager
 import android.os.*
