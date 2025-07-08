@@ -2,14 +2,19 @@ package com.example.wifi_direct_proxy
 
 import android.Manifest
 import android.content.*
+import android.content.res.ColorStateList
 import android.net.wifi.WifiManager
 import android.net.wifi.p2p.WifiP2pGroup
 import android.net.wifi.p2p.WifiP2pManager
 import android.os.*
 import android.util.Log
+import android.view.View
+import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.example.wifi_direct_proxy.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
@@ -17,6 +22,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var manager: WifiP2pManager
     private lateinit var channel: WifiP2pManager.Channel
 
+    private var isServerRunning = false
     private val TAG = "WiFiDirect"
 
     private val permissionsLauncher = registerForActivityResult(
@@ -36,6 +42,10 @@ class MainActivity : AppCompatActivity() {
 
         val binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // 서버 상태 초기화
+        updateServerStatus(false, 0)
+
         binding.btnStart.setOnClickListener {
             val port = binding.etPort.text.toString().toIntOrNull() ?: 1081
             startService(HttpProxyService.newStartIntent(this, port))
@@ -59,7 +69,41 @@ class MainActivity : AppCompatActivity() {
             )
         )
 
-        registerReceiver(wifiDirectReceiver, IntentFilter(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION))
+        val systemFilter = IntentFilter().apply {
+            addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(wifiDirectReceiver, systemFilter, RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("DEPRECATION")
+            registerReceiver(wifiDirectReceiver, systemFilter)
+        }
+
+        // 사용자 정의 브로드캐스트는 LocalBroadcastManager로 수신
+        val localFilter = IntentFilter().apply {
+            addAction("SERVER_STARTED")
+            addAction("SERVER_STOPPED")
+        }
+        LocalBroadcastManager.getInstance(this).registerReceiver(wifiDirectReceiver, localFilter)
+
+    }
+
+    private fun updateServerStatus(isRunning: Boolean, port: Int) {
+        isServerRunning = isRunning
+        val tvServerStatus = findViewById<TextView>(R.id.tvServerStatus)
+        val statusIndicator = findViewById<View>(R.id.statusIndicator)
+
+        if (isRunning) {
+            tvServerStatus.text = "Server Status: Running on port $port"
+            statusIndicator.backgroundTintList = ColorStateList.valueOf(
+                ContextCompat.getColor(this, R.color.status_active)
+            )
+        } else {
+            tvServerStatus.text = "Server Status: Stopped"
+            statusIndicator.backgroundTintList = ColorStateList.valueOf(
+                ContextCompat.getColor(this, R.color.status_inactive)
+            )
+        }
     }
 
     private fun startWiFiDirectFlow() {
@@ -157,6 +201,16 @@ class MainActivity : AppCompatActivity() {
                     // 화면에 띄우거나 QR 코드로 공유 가능
                 }
             }
+            when (intent?.action) {
+                "SERVER_STARTED" -> {
+                    val port = intent.getIntExtra("port", 1081)
+                    Log.d(TAG, "📥 SERVER_STARTED received, port=$port")
+                    updateServerStatus(true, port)
+                }
+                "SERVER_STOPPED" -> {
+                    updateServerStatus(false, 0)
+                }
+            }
         }
     }
 
@@ -164,5 +218,6 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         stopService(HttpProxyService.newStopIntent(this))
         unregisterReceiver(wifiDirectReceiver)
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(wifiDirectReceiver)
     }
 }

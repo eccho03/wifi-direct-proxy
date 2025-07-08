@@ -59,4 +59,6 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    implementation("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
+
 }

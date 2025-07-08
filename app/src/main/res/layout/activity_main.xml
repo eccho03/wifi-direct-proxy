@@ -31,7 +31,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="WiFi Direct로 기기 간 직접 연결된 SOCKS 프록시 서버"
+                android:text="SOCKS Proxy Server"
                 android:textColor="@color/primary_text"
                 android:textSize="24sp"
                 android:textStyle="bold"
@@ -227,12 +227,14 @@
             android:gravity="center_vertical">
 
             <View
+                android:id="@+id/statusIndicator"
                 android:layout_width="12dp"
                 android:layout_height="12dp"
                 android:background="@drawable/status_indicator"
                 android:layout_marginEnd="12dp" />
 
             <TextView
+                android:id="@+id/tvServerStatus"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Server Status: Stopped"

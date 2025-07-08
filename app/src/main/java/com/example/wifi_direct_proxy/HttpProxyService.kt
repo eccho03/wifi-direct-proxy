@@ -7,8 +7,10 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.util.Log
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 
 class HttpProxyService : Service() {
 
@@ -64,6 +66,13 @@ class HttpProxyService : Service() {
                 Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
             }
         }
+
+        // 브로드캐스트 전송 추가
+        Log.d("HttpProxyService", "📢 Sending SERVER_STARTED with port = $port")
+        val intent = Intent("SERVER_STARTED").apply {
+            putExtra("port", port)
+        }
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
     override fun onBind(intent: Intent): IBinder? {
@@ -74,6 +83,12 @@ class HttpProxyService : Service() {
         super.onDestroy()
         httpProxy?.stop()
         httpProxy = null
+
+        // 서버 종료 알림 브로드캐스트
+        val intent = Intent("SERVER_STOPPED").apply {
+            putExtra("port", port)
+        }
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
     companion object {
